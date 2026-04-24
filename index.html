@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DASHBOARD REFRESHMENT TRAINING</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        
+        :root {
+            --primary: #0f172a;
+            --accent: #2563eb;
+            --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+        }
+
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background: var(--bg-gradient);
+            color: #1e293b;
+            letter-spacing: -0.01em;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 1024px) {
+            .stats-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+
+        @media (max-width: 640px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        .card-stat {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-right: 4px solid #cbd5e1; /* Shadow effect border */
+            border-bottom: 2px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            height: 100%;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .card-stat:hover {
+            transform: translateY(-5px);
+            border-color: #2563eb;
+            border-right-color: #1d4ed8;
+            box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.15);
+        }
+
+        /* Specific border colors for categories */
+        .card-stat.underperform:hover { border-right-color: #e11d48; border-color: #f43f5e; }
+        .card-stat.tna:hover { border-right-color: #2563eb; border-color: #3b82f6; }
+        .card-stat.materi:hover { border-right-color: #d97706; border-color: #f59e0b; }
+        .card-stat.approved:hover { border-right-color: #9333ea; border-color: #a855f7; }
+        .card-stat.implemented:hover { border-right-color: #059669; border-color: #10b981; }
+        .card-stat.growth:hover { border-right-color: #4f46e5; border-color: #6366f1; }
+
+        .table-wrapper {
+            background: #fdfdfe;
+            border: 2px solid #f1f5f9;
+            border-radius: 24px;
+            overflow: hidden;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .table-scroll {
+            overflow-y: auto;
+            max-height: 500px;
+            position: relative;
+        }
+
+        .table-custom {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table-custom thead th {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background-color: #f8fafc;
+            color: #64748b;
+            font-weight: 800;
+            font-size: 10px;
+            text-transform: uppercase;
+            padding: 14px 12px;
+            border-bottom: 2px solid #f1f5f9;
+            border-right: 1px solid #f1f5f9;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: background 0.2s;
+            text-align: left;
+        }
+
+        .table-custom thead th:hover { background-color: #f1f5f9; }
+
+        .table-custom td { 
+            padding: 12px; 
+            font-size: 11px; 
+            border: 1px solid #f1f5f9;
+            vertical-align: middle;
+            background-color: white;
+            color: #334155;
+        }
+
+        .circle-container { width: 160px; height: 160px; position: relative; }
+        .circle-bg { fill: none; stroke: #f1f5f9; stroke-width: 12; }
+        .circle-progress { 
+            fill: none; stroke: #2563eb; stroke-width: 12; 
+            stroke-linecap: round; transition: stroke-dashoffset 1.5s ease;
+        }
+
+        .btn-wa {
+            background: #25d366;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .btn-wa:hover { background: #22c35e; }
+
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-track { background: #f8fafc; }
+        
+        .filter-select, .filter-input {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 4px 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: white;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .filter-select:focus, .filter-input:focus { border-color: #2563eb; }
+
+        /* Modal Styles */
+        #modal-overlay {
+            backdrop-filter: blur(4px);
+            background-color: rgba(15, 23, 42, 0.4);
+            transition: all 0.3s ease;
+        }
+        .modal-content {
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+        }
+    </style>
+</head>
+<body class="flex min-h-screen">
+
+    <aside class="hidden xl:flex flex-col w-60 bg-white border-r border-slate-100 sticky top-0 h-screen z-50">
+        <div class="p-6">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">T</div>
+                <span class="text-lg font-extrabold tracking-tight text-slate-900 italic">Trusmi<span class="text-blue-600">verse</span></span>
+            </div>
+        </div>
+        <nav class="flex-1 px-4 space-y-1">
+            <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-50 text-blue-700 font-bold text-sm italic"><i class="fas fa-chart-line"></i> Dashboard</a>
+        </nav>
+    </aside>
+
+    <div class="flex-1 flex flex-col min-w-0">
+        <header class="bg-white/80 backdrop-blur-md border-b border-slate-100 h-24 flex items-center px-6 lg:px-10 justify-between sticky top-0 z-40">
+            <h2 class="text-sm lg:text-base font-black text-slate-900 italic uppercase tracking-tight">DASHBOARD REFRESHMENT TRAINING</h2>
+            <div class="flex items-center gap-6">
+                <div class="flex flex-col gap-1.5 items-end">
+                    <div class="text-right">
+                        <p class="text-[10px] font-black text-slate-900 leading-none">Wildani</p>
+                        <p class="text-[8px] font-bold text-slate-400 mt-1">HR Administrator</p>
+                    </div>
+                    <div class="flex items-center gap-2 mt-1">
+                        <select id="filterDivisi" onchange="applyFilters()" class="filter-select">
+                            <option value="all">All Divisi</option>
+                            <option value="Support">Support</option>
+                            <option value="Produksi">Produksi</option>
+                            <option value="Sales & Marketing">Sales & Marketing</option>
+                        </select>
+                        <select id="filterBulan" onchange="applyFilters()" class="filter-select">
+                            <option value="all">Semua Bulan</option>
+                            <option value="1">Januari</option>
+                            <option value="2">Februari</option>
+                            <option value="3">Maret</option>
+                            <option value="4">April</option>
+                            <option value="5">Mei</option>
+                            <option value="6">Juni</option>
+                            <option value="7">Juli</option>
+                            <option value="8">Agustus</option>
+                            <option value="9">September</option>
+                            <option value="10">Oktober</option>
+                            <option value="11">November</option>
+                            <option value="12">Desember</option>
+                        </select>
+                        <div class="flex items-center gap-1">
+                            <input type="date" id="filterStart" onchange="applyFilters()" class="filter-input" title="Start Date">
+                            <span class="text-[10px] font-bold text-slate-400">-</span>
+                            <input type="date" id="filterEnd" onchange="applyFilters()" class="filter-input" title="End Date">
+                        </div>
+                    </div>
+                </div>
+                <img src="https://ui-avatars.com/api/?name=Wildani&background=0f172a&color=fff" class="w-8 h-8 rounded-lg">
+            </div>
+        </header>
+
+        <main class="p-4 lg:p-8 max-w-[1600px] mx-auto w-full space-y-6">
+            
+            <div id="status-message" class="hidden p-4 bg-rose-50 border border-rose-100 text-rose-600 rounded-2xl text-[10px] font-bold uppercase italic animate-pulse">
+                Terjadi kesalahan saat memuat data. Mencoba kembali...
+            </div>
+
+            <div class="stats-grid">
+                <div class="card-stat underperform" onclick="showCardDetail('underperform')">
+                    <div class="flex justify-between items-start">
+                        <span class="text-[9px] font-bold text-slate-400 uppercase">Underperform</span>
+                        <div class="w-6 h-6 bg-rose-50 text-rose-500 rounded flex items-center justify-center text-[10px]"><i class="fas fa-user-minus"></i></div>
+                    </div>
+                    <span id="stat-underperform" class="text-2xl font-black text-slate-900 mt-2 italic">--</span>
+                    <span class="text-[9px] text-rose-500 font-bold mt-1 uppercase">Nilai KPI < 80%</span>
+                </div>
+                <div class="card-stat tna" onclick="showCardDetail('tna')">
+                    <div class="flex justify-between items-start">
+                        <span class="text-[9px] font-bold text-slate-400 uppercase">TNA Selesai</span>
+                        <div class="w-6 h-6 bg-blue-50 text-blue-500 rounded flex items-center justify-center text-[10px]"><i class="fas fa-clipboard-check"></i></div>
+                    </div>
+                    <span id="stat-tna" class="text-2xl font-black mt-2 italic text-blue-600">--</span>
+                    <span id="detail-tna" class="text-[9px] text-slate-400 font-bold mt-1 uppercase">--</span>
+                </div>
+                <div class="card-stat materi" onclick="showCardDetail('materi')">
+                    <div class="flex justify-between items-start">
+                        <span class="text-[9px] font-bold text-slate-400 uppercase">Materi Siap</span>
+                        <div class="w-6 h-6 bg-amber-50 text-amber-500 rounded flex items-center justify-center text-[10px]"><i class="fas fa-book-open"></i></div>
+                    </div>
+                    <span id="stat-materi" class="text-2xl font-black mt-2 italic text-amber-600">--</span>
+                    <span id="detail-materi" class="text-[9px] text-slate-400 font-bold mt-1 uppercase">--</span>
+                </div>
+                <div class="card-stat approved" onclick="showCardDetail('approved')">
+                    <div class="flex justify-between items-start">
+                        <span class="text-[9px] font-bold text-slate-400 uppercase">Approved</span>
+                        <div class="w-6 h-6 bg-purple-50 text-purple-500 rounded flex items-center justify-center text-[10px]"><i class="fas fa-check-double"></i></div>
+                    </div>
+                    <span id="stat-approved" class="text-2xl font-black mt-2 italic text-purple-600">--</span>
+                    <span id="detail-approved" class="text-[9px] text-slate-400 font-bold mt-1 uppercase">--</span>
+                </div>
+                <div class="card-stat implemented" onclick="showCardDetail('implemented')">
+                    <div class="flex justify-between items-start">
+                        <span class="text-[9px] font-bold text-slate-400 uppercase">Implemented</span>
+                        <div class="w-6 h-6 bg-emerald-50 text-emerald-500 rounded flex items-center justify-center text-[10px]"><i class="fas fa-graduation-cap"></i></div>
+                    </div>
+                    <span id="stat-implemented" class="text-2xl font-black mt-2 italic text-emerald-600">--</span>
+                    <span id="detail-implemented" class="text-[9px] text-slate-400 font-bold mt-1 uppercase">--</span>
+                </div>
+                <div class="card-stat growth" onclick="showCardDetail('growth')">
+                    <div class="flex justify-between items-start">
+                        <span class="text-[9px] font-bold text-slate-400 uppercase">Growth</span>
+                        <div class="w-6 h-6 bg-indigo-50 text-indigo-500 rounded flex items-center justify-center text-[10px]"><i class="fas fa-chart-line"></i></div>
+                    </div>
+                    <span id="stat-growth" class="text-2xl font-black mt-2 italic text-indigo-600">--</span>
+                    <span id="detail-growth" class="text-[9px] text-slate-400 font-bold mt-1 uppercase">--</span>
+                </div>
+            </div>
+
+            <!-- MODAL DETAIL -->
+            <div id="modal-overlay" class="fixed inset-0 z-[100] hidden items-center justify-center p-4">
+                <div class="modal-content bg-white w-full max-w-5xl rounded-[32px] overflow-hidden">
+                    <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                        <div>
+                            <h3 id="modal-title" class="text-sm font-black text-slate-900 uppercase italic">Detail Data</h3>
+                            <p id="modal-subtitle" class="text-[10px] font-bold text-slate-400 mt-1 uppercase italic tracking-tight"></p>
+                        </div>
+                        <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition-colors">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="flex-1 overflow-auto p-4 italic">
+                        <table class="table-custom w-full" id="modalTable">
+                            <thead id="modal-table-header"></thead>
+                            <tbody id="modal-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-12 gap-6">
+                <div class="col-span-12 lg:col-span-7 bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm italic flex flex-col sm:flex-row gap-8 items-center justify-center">
+                    <div class="circle-container flex-shrink-0">
+                        <svg class="w-full h-full transform -rotate-90">
+                            <circle class="circle-bg" cx="80" cy="80" r="68"></circle>
+                            <circle id="circle-progress" class="circle-progress" cx="80" cy="80" r="68" stroke-dasharray="427" stroke-dashoffset="427"></circle>
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center leading-none">
+                            <span id="stat-total-done" class="text-3xl font-black text-slate-900 italic">0%</span>
+                            <span class="text-[8px] font-bold text-slate-400 uppercase mt-1 tracking-tighter">Overall Completion</span>
+                        </div>
+                    </div>
+                    <div id="progress-list" class="flex-1 space-y-3 w-full max-sm:max-w-sm"></div>
+                </div>
+
+                <div class="col-span-12 lg:col-span-5 bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm italic">
+                    <h3 class="text-[10px] font-black uppercase tracking-widest mb-4 border-b pb-2">Jadwal Mendatang (Plan)</h3>
+                    <div id="jadwal-list" class="space-y-3"></div>
+                    <p id="update-timestamp" class="text-[7px] font-bold text-slate-300 mt-4 uppercase">Syncing...</p>
+                </div>
+            </div>
+
+            <div class="table-wrapper italic shadow-sm">
+                <div class="p-5 border-b border-slate-50 flex flex-col sm:flex-row justify-between items-center gap-3">
+                    <h3 class="text-xs font-black text-slate-900 uppercase">Detail Implementasi (Data_COE)</h3>
+                    <div class="relative w-full sm:w-64">
+                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 text-[10px]"></i>
+                        <input type="text" id="tableSearch" onkeyup="searchData()" placeholder="Cari..." class="w-full bg-slate-50 border-none rounded-xl py-2 pl-9 pr-4 text-[11px] outline-none">
+                    </div>
+                </div>
+                <div class="table-scroll overflow-x-auto">
+                    <table class="table-custom" id="trainingTable">
+                        <thead id="table-header"></thead>
+                        <tbody id="table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="table-wrapper italic shadow-sm mt-8">
+                <div class="p-5 border-b border-slate-50 flex flex-col sm:flex-row justify-between items-center gap-3">
+                    <h3 class="text-xs font-black text-slate-900 uppercase text-blue-600">Detail Data KPI</h3>
+                    <div class="relative w-full sm:w-64">
+                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 text-[10px]"></i>
+                        <input type="text" id="kpiSearch" onkeyup="searchKPIData()" placeholder="Cari di Data KPI..." class="w-full bg-slate-50 border-none rounded-xl py-2 pl-9 pr-4 text-[11px] outline-none">
+                    </div>
+                </div>
+                <div class="table-scroll overflow-x-auto">
+                    <table class="table-custom" id="kpiTable">
+                        <thead id="kpi-table-header"></thead>
+                        <tbody id="kpi-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const scriptURL = 'https://script.google.com/macros/s/AKfycby0nknigY3PodLjUP3F60ezeRjm_bHjMHu3g18Th96hxha3NBeWAnGvn-8Wg99vm-JR/exec';
+        
+        let rawData = [];
+        let rawKPIData = [];
+        let filteredKPIGlobal = [];
+        let filteredImpGlobal = [];
+        let sortOrder = {};
+        let fetchController = null;
+
+        // Fungsi normalisasi sederhana (tanpa merge filling)
+        function normalizeData(data) {
+            if (!data || data.length === 0) return data;
+            return data.map(row => {
+                let newRow = { ...row };
+                Object.keys(newRow).forEach(key => {
+                    if (newRow[key] === "" || newRow[key] === null || newRow[key] === undefined) {
+                        newRow[key] = "-";
+                    }
+                });
+                return newRow;
+            });
+        }
+
+        async function fetchData() {
+            if (fetchController) fetchController.abort();
+            fetchController = new AbortController();
+            const signal = fetchController.signal;
+            const statusMsg = document.getElementById('status-message');
+
+            try {
+                const response = await fetch(scriptURL, { 
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' },
+                    signal: signal 
+                });
+                
+                if (!response.ok) throw new Error('Network response error');
+                
+                const res = await response.json();
+                statusMsg.classList.add('hidden');
+
+                // Menggunakan data asli sesuai sheet tanpa pengisian sel kosong
+                rawData = normalizeData(res.details || []);
+                rawKPIData = normalizeData(res.kpiDetails || []);
+
+                applyFilters(); 
+                document.getElementById('update-timestamp').innerText = 'Sync: ' + new Date().toLocaleTimeString();
+            } catch (error) { 
+                if (error.name !== 'AbortError') {
+                    console.error("Fetch Error:", error);
+                    statusMsg.classList.remove('hidden');
+                    setTimeout(fetchData, 10000); 
+                }
+            }
+        }
+
+        function applyFilters() {
+            const divisi = document.getElementById('filterDivisi').value;
+            const bulan = document.getElementById('filterBulan').value;
+            const start = document.getElementById('filterStart').value;
+            const end = document.getElementById('filterEnd').value;
+
+            const checkFilter = (row) => {
+                const rowDivisi = String(row['Divisi'] || '');
+                const rowBulan = String(row['Bulan'] || '');
+                const rowTanggalStr = row['Tanggal Training'] || row['Plan Start'] || '';
+                
+                const divisiMatch = (divisi === 'all' || rowDivisi === divisi);
+                const bulanMatch = (bulan === 'all' || rowBulan === bulan);
+                let dateValid = true;
+
+                if (start && end && rowTanggalStr && rowTanggalStr !== "-") {
+                    const rDate = new Date(rowTanggalStr);
+                    const sDate = new Date(start);
+                    const eDate = new Date(end);
+                    rDate.setHours(0,0,0,0);
+                    sDate.setHours(0,0,0,0);
+                    eDate.setHours(0,0,0,0);
+                    dateValid = (rDate >= sDate && rDate <= eDate);
+                }
+                return divisiMatch && bulanMatch && dateValid;
+            };
+
+            filteredKPIGlobal = rawKPIData.filter(checkFilter);
+            
+            if (bulan === 'all') {
+                filteredImpGlobal = rawData.filter(r => divisi === 'all' || String(r['Divisi'] || '') === divisi);
+            } else {
+                const targetBulanNum = parseInt(bulan) + 1 > 12 ? 1 : parseInt(bulan) + 1;
+                filteredImpGlobal = rawData.filter(r => {
+                    const rowDivisi = String(r['Divisi'] || '');
+                    const planStartStr = r['Plan Start'];
+                    if (!planStartStr || planStartStr === "-") return false;
+                    const pDate = new Date(planStartStr);
+                    const mMatch = !isNaN(pDate.getTime()) && (pDate.getMonth() + 1) === targetBulanNum;
+                    const dMatch = (divisi === 'all' || rowDivisi === divisi);
+                    return mMatch && dMatch;
+                });
+            }
+
+            recalculateCards(filteredKPIGlobal, filteredImpGlobal, bulan);
+            renderTable(filteredImpGlobal);
+            renderJadwal(rawData, bulan, divisi); 
+            renderKPITable(filteredKPIGlobal);
+        }
+
+        function parsePercentage(val) {
+            if (val === null || val === undefined || val === "" || val === "-") return null;
+            if (typeof val === 'number') return val;
+            let clean = String(val).replace(/%/g, '').replace(/,/g, '.').trim();
+            let num = parseFloat(clean);
+            if (String(val).includes('%')) return num / 100;
+            return num;
+        }
+
+        function recalculateCards(kpiData, implementasiData, filterBulan) {
+            const getUniqueKey = (id, row) => `${String(id).trim()}_${row['Bulan'] || 'none'}`;
+            const getImpUniqueKey = (row) => {
+                const d = new Date(row['Plan Start']);
+                const m = isNaN(d.getTime()) ? 'none' : (d.getMonth() + 1);
+                return `${String(row['Materi / Modul']).trim()}_${m}`;
+            };
+
+            const underRows = kpiData.filter(r => {
+                const s = parsePercentage(r['Nilai KPI']);
+                return s !== null && s < 0.8;
+            });
+
+            const tnaValidRows = underRows.filter(r => {
+                const mslh = String(r['Akar Masalah (Analisis)'] || '').trim();
+                return mslh !== "" && mslh !== "-" && !mslh.toLowerCase().includes('kompeten');
+            });
+            const listMasalahUnique = [...new Set(tnaValidRows.map(r => getUniqueKey(r['Akar Masalah (Analisis)'], r)))];
+            const x_tna = listMasalahUnique.length;
+            const y_tna = [...new Set(underRows.map(r => getUniqueKey(r['Departement'], r)))].filter(v => v && !v.startsWith('-_') && !v.startsWith('_')).length;
+            const percTna = y_tna > 0 ? (x_tna / y_tna) : 0;
+
+            const listMateriUnique = [...new Set(underRows
+                .filter(r => {
+                    const mat = String(r['Materi Training'] || '').trim();
+                    return mat !== "" && mat !== "-";
+                })
+                .map(r => String(r['Materi Training']).trim().toUpperCase()))];
+            
+            const x_materi = listMateriUnique.length;
+            const y_materi = x_tna; 
+            const percMateri = y_materi > 0 ? (x_materi / y_materi) : 0;
+
+            const listAppUnique = [...new Set(underRows
+                .filter(r => {
+                    const mat = String(r['Materi Training'] || '').trim();
+                    const app = String(r['Approval User'] || '').toUpperCase();
+                    return mat !== "" && mat !== "-" && app === "YA";
+                })
+                .map(r => String(r['Materi Training']).trim().toUpperCase()))];
+            
+            const x_app = listAppUnique.length;
+            const y_app = x_materi; 
+            const percApp = y_app > 0 ? (x_app / y_app) : 0;
+
+            const doneRows = implementasiData.filter(r => ['done', 'selesai', 'complete'].includes(String(r['Status'] || '').toLowerCase()));
+            const x_imp = [...new Set(doneRows.map(r => getImpUniqueKey(r)))].length;
+            const y_imp = x_app; 
+            const percImp = y_imp > 0 ? (x_imp / y_imp) : 0;
+
+            const x_growth = kpiData.filter(r => 
+                String(r['Status Performance'] || '').toUpperCase().includes('GROWTH') && 
+                String(r['Training Sebagai Solusi'] || '').toUpperCase() === "YA"
+            ).length;
+            const y_growth = kpiData.filter(r => 
+                String(r['Training Sebagai Solusi'] || '').toUpperCase() === "YA"
+            ).length;
+            const percGrowth = y_growth > 0 ? (x_growth / y_growth) : 0;
+
+            document.getElementById('stat-underperform').innerText = underRows.length;
+            setCard('stat-tna', 'detail-tna', percTna, `${x_tna}/${y_tna}`);
+            setCard('stat-materi', 'detail-materi', percMateri, `${x_materi}/${y_materi}`);
+            setCard('stat-approved', 'detail-approved', percApp, `${x_app}/${y_app}`);
+            setCard('stat-implemented', 'detail-implemented', percImp, `${x_imp}/${y_imp}`);
+            setCard('stat-growth', 'detail-growth', percGrowth, `${x_growth}/${y_growth}`);
+
+            const avg = Math.round(((percTna + percMateri + percApp + percImp + percGrowth) / 5) * 100);
+            document.getElementById('stat-total-done').innerText = avg + '%';
+            document.getElementById('circle-progress').style.strokeDashoffset = 427 - (427 * (avg / 100));
+
+            const metrics = [
+                { label: 'TNA Selesai', val: percTna },
+                { label: 'Materi Siap', val: percMateri },
+                { label: 'Approved', val: percApp },
+                { label: 'Implemented', val: percImp },
+                { label: 'Growth', val: percGrowth }
+            ];
+
+            document.getElementById('progress-list').innerHTML = metrics.map(m => `
+                <div>
+                    <div class="flex justify-between mb-1 text-[8px] font-black uppercase"><span>${m.label}</span><span>${Math.round(m.val * 100)}%</span></div>
+                    <div class="w-full h-1.5 bg-slate-50 rounded-full border border-slate-100 overflow-hidden">
+                        <div class="h-full bg-blue-600 transition-all duration-1000" style="width: ${m.val * 100}%"></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function setCard(id, detailId, val, info) {
+            const el = document.getElementById(id);
+            const det = document.getElementById(detailId);
+            if(el) el.innerText = Math.round(val * 100) + '%';
+            if(det) det.innerText = info;
+        }
+
+        function showCardDetail(type) {
+            const overlay = document.getElementById('modal-overlay');
+            const title = document.getElementById('modal-title');
+            const subtitle = document.getElementById('modal-subtitle');
+            const tableHeader = document.getElementById('modal-table-header');
+            const tableBody = document.getElementById('modal-table-body');
+            
+            let displayData = [];
+            let headerKeys = [];
+
+            switch(type) {
+                case 'underperform':
+                    title.innerText = 'Detail Underperform';
+                    subtitle.innerText = 'Karyawan dengan Nilai KPI < 80%';
+                    displayData = filteredKPIGlobal.filter(r => parsePercentage(r['Nilai KPI']) < 0.8);
+                    break;
+                case 'tna':
+                    title.innerText = 'Detail TNA Selesai';
+                    subtitle.innerText = 'Analisis Akar Masalah yang telah diidentifikasi';
+                    displayData = filteredKPIGlobal.filter(r => {
+                        const mslh = String(r['Akar Masalah (Analisis)'] || '').trim();
+                        return parsePercentage(r['Nilai KPI']) < 0.8 && mslh !== "" && mslh !== "-" && !mslh.toLowerCase().includes('kompeten');
+                    });
+                    break;
+                case 'materi':
+                    title.innerText = 'Detail Materi Siap';
+                    subtitle.innerText = 'Materi training yang sudah tersedia';
+                    displayData = filteredKPIGlobal.filter(r => {
+                        const mat = String(r['Materi Training'] || '').trim();
+                        const sol = String(r['Training Sebagai Solusi'] || '').toUpperCase();
+                        return parsePercentage(r['Nilai KPI']) < 0.8 && mat !== "" && mat !== "-" && sol === "YA";
+                    });
+                    break;
+                case 'approved':
+                    title.innerText = 'Detail Approved';
+                    subtitle.innerText = 'Materi yang telah disetujui oleh User';
+                    displayData = filteredKPIGlobal.filter(r => {
+                        const app = String(r['Approval User'] || '').toUpperCase();
+                        const sol = String(r['Training Sebagai Solusi'] || '').toUpperCase();
+                        return app === "YA" && sol === "YA";
+                    });
+                    break;
+                case 'implemented':
+                    title.innerText = 'Detail Implemented';
+                    subtitle.innerText = 'Data Training yang sudah selesai dilaksanakan';
+                    displayData = filteredImpGlobal.filter(r => {
+                        const sv = String(r['Status'] || '').toLowerCase();
+                        return ['done', 'selesai', 'complete'].includes(sv);
+                    });
+                    break;
+                case 'growth':
+                    title.innerText = 'Detail Growth';
+                    subtitle.innerText = 'Karyawan yang mengalami kenaikan performa (Growth)';
+                    displayData = filteredKPIGlobal.filter(r => {
+                        const perf = String(r['Status Performance'] || '').toUpperCase();
+                        const sol = String(r['Training Sebagai Solusi'] || '').toUpperCase();
+                        return perf.includes('GROWTH') && sol === "YA";
+                    });
+                    break;
+            }
+
+            if (displayData.length > 0) {
+                headerKeys = Object.keys(displayData[0]);
+                tableHeader.innerHTML = `<tr>${headerKeys.map(k => `<th>${k}</th>`).join('')}</tr>`;
+                tableBody.innerHTML = displayData.map(row => `<tr>${headerKeys.map(k => `<td>${row[k] || '-'}</td>`).join('')}</tr>`).join('');
+            } else {
+                tableHeader.innerHTML = '';
+                tableBody.innerHTML = '<tr><td colspan="100%" class="text-center py-8 text-slate-400">Tidak ada data untuk ditampilkan</td></tr>';
+            }
+
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+        }
+
+        function closeModal() {
+            const overlay = document.getElementById('modal-overlay');
+            overlay.classList.add('hidden');
+            overlay.classList.remove('flex');
+        }
+
+        window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+        function renderTable(data) {
+            const tableBody = document.getElementById('table-body');
+            const tableHeader = document.getElementById('table-header');
+            if (!data.length) {
+                tableBody.innerHTML = "<tr><td colspan='100%' class='text-center py-4 text-slate-400'>Data tidak ditemukan</td></tr>";
+                return;
+            }
+            const keys = Object.keys(data[0]);
+            tableHeader.innerHTML = `<tr>${keys.map(k => `<th onclick="sortTable('training', '${k}')">${k} <i class="fas fa-sort text-[8px] ml-1 opacity-50"></i></th>`).join('')}</tr>`;
+            let h = "";
+            data.forEach((row) => {
+                h += "<tr>";
+                keys.forEach(k => {
+                    const v = row[k];
+                    if (k === 'Status') {
+                        const sv = String(v).toLowerCase();
+                        let scs = sv === 'plan' ? 'bg-amber-100 text-amber-700' : (['done','selesai','complete'].includes(sv) ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600');
+                        h += `<td class="text-center"><span class="px-2 py-0.5 rounded-full font-bold text-[8px] uppercase ${scs}">${v}</span></td>`;
+                    } else h += `<td>${v}</td>`;
+                });
+                h += "</tr>";
+            });
+            tableBody.innerHTML = h;
+        }
+
+        function renderKPITable(data) {
+            const tableBody = document.getElementById('kpi-table-body');
+            const tableHeader = document.getElementById('kpi-table-header');
+            if (!data.length) {
+                tableBody.innerHTML = "<tr><td colspan='100%' class='text-center py-4 text-slate-400'>Data tidak ditemukan</td></tr>";
+                return;
+            }
+            const keys = Object.keys(data[0]);
+            tableHeader.innerHTML = `<tr>${keys.map(k => `<th onclick="sortTable('kpi', '${k}')">${k} <i class="fas fa-sort text-[8px] ml-1 opacity-50"></i></th>`).join('')}</tr>`;
+            let h = "";
+            data.forEach(row => {
+                h += "<tr>";
+                keys.forEach(k => {
+                    const v = row[k];
+                    const lv = String(v).toLowerCase();
+                    const score = parsePercentage(v);
+
+                    if (k === 'Nilai KPI' && score !== null && score < 0.8) h += `<td><span class="text-rose-600 font-bold">${v}</span></td>`;
+                    else if (lv.includes('growth') || lv === 'ya') h += `<td class="text-center"><span class="px-2 py-0.5 rounded-full font-bold text-[8px] uppercase bg-emerald-100 text-emerald-700">${v}</span></td>`;
+                    else if (lv === 'tidak growth' || lv === 'tidak') h += `<td class="text-center"><span class="px-2 py-0.5 rounded-full font-bold text-[8px] uppercase bg-rose-100 text-rose-700">${v}</span></td>`;
+                    else h += `<td>${v}</td>`;
+                });
+                h += "</tr>";
+            });
+            tableBody.innerHTML = h;
+        }
+
+        function renderJadwal(sourceData, filterBulan, filterDivisi) {
+            let plans = [];
+            const checkBase = (r) => {
+                const rowDivisi = String(r['Divisi'] || '');
+                const dMatch = (filterDivisi === 'all' || rowDivisi === filterDivisi);
+                const sMatch = String(r.Status).toLowerCase() === 'plan';
+                return dMatch && sMatch;
+            }
+
+            if (filterBulan === 'all') {
+                plans = sourceData.filter(checkBase);
+            } else {
+                const targetBulanNum = parseInt(filterBulan) + 1 > 12 ? 1 : parseInt(filterBulan) + 1;
+                plans = sourceData.filter(r => {
+                    if (!checkBase(r)) return false;
+                    const planStartStr = r['Plan Start'];
+                    if (!planStartStr || planStartStr === "-") return false;
+                    const pDate = new Date(planStartStr);
+                    return !isNaN(pDate.getTime()) && (pDate.getMonth() + 1) === targetBulanNum;
+                });
+            }
+            
+            const displayPlans = plans.slice(0, 5);
+            document.getElementById('jadwal-list').innerHTML = displayPlans.length ? displayPlans.map(p => {
+                const d = new Date(p['Plan Start']);
+                return `
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-3">
+                    <div class="w-9 h-9 bg-blue-600 rounded-lg flex flex-col items-center justify-center text-white text-[8px] font-black">
+                        <span>${isNaN(d.getTime()) ? '?' : d.getDate()}</span>
+                        <span class="uppercase">${isNaN(d.getTime()) ? '-' : d.toLocaleDateString('id-ID', {month:'short'})}</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-[9px] font-black text-slate-900 uppercase truncate">${p['Materi / Modul'] || '-'}</p>
+                        <p class="text-[8px] font-bold text-blue-600 uppercase truncate">${p.Departemen || '-'} | ${p['Plan Trainer'] || '-'}</p>
+                    </div>
+                    <button onclick="sendBlast('${p['Materi / Modul']}', '${p['Plan Start']}', '${p.Departemen}')" class="btn-wa px-3 py-2 rounded-lg text-[9px] font-black"><i class="fab fa-whatsapp"></i> Blasting</button>
+                </div>`;
+            }).join('') : '<p class="text-[9px] text-slate-400 text-center py-2">Tidak ada jadwal mendatang</p>';
+        }
+
+        function sendBlast(m, w, d) {
+            const t = `*UNDANGAN TRAINING REFRESHMENT*%0A%0A*Materi:* ${m}%0A*Waktu:* ${w.split('T')[0]}%0A*Dept:* ${d}`;
+            window.open(`https://api.whatsapp.com/send?text=${t}`, '_blank');
+        }
+
+        function sortTable(type, key) {
+            const targetData = type === 'training' ? rawData : rawKPIData;
+            const renderFn = type === 'training' ? renderTable : renderKPITable;
+            sortOrder[key] = sortOrder[key] === 'asc' ? 'desc' : 'asc';
+            
+            targetData.sort((a, b) => {
+                let valA = a[key] === null || a[key] === undefined ? "" : a[key].toString();
+                let valB = b[key] === null || b[key] === undefined ? "" : b[key].toString();
+                const numA = parseFloat(valA.replace(/[%,]/g, ''));
+                const numB = parseFloat(valB.replace(/[%,]/g, ''));
+                if (!isNaN(numA) && !isNaN(numB)) return sortOrder[key] === 'asc' ? numA - numB : numB - numA;
+                return sortOrder[key] === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+            });
+            renderFn(targetData);
+        }
+
+        function searchData() {
+            const s = document.getElementById('tableSearch').value.toLowerCase();
+            renderTable(rawData.filter(r => Object.values(r).some(v => String(v).toLowerCase().includes(s))));
+        }
+
+        function searchKPIData() {
+            const s = document.getElementById('kpiSearch').value.toLowerCase();
+            renderKPITable(rawKPIData.filter(r => Object.values(r).some(v => String(v).toLowerCase().includes(s))));
+        }
+
+        window.onload = fetchData;
+        setInterval(fetchData, 60000); 
+    </script>
+</body>
+</html>
